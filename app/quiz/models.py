@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional
 
-from sqlalchemy import Column, BigInteger, String, Boolean, ForeignKey, Integer
+from sqlalchemy import Column, BigInteger, String, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 from app.store.database.sqlalchemy_base import db
@@ -31,10 +31,9 @@ class Question:
 @dataclass
 class Answer:
     title: str
-    is_correct: bool
 
     def to_model(self):
-        return AnswerModel(title=self.title, is_correct=self.is_correct)
+        return AnswerModel(title=self.title)
 
 
 class ThemeModel(db):
@@ -55,17 +54,15 @@ class QuestionModel(db):
 
     def to_dc(self):
         return Question(id=self.id, title=self.title, theme_id=self.theme_id,
-                        answers=[Answer(title=answer.title,
-                                        is_correct=answer.is_correct) for answer in self.answers])
+                        answers=[Answer(title=answer.title,) for answer in self.answers])
 
 
 class AnswerModel(db):
     __tablename__ = "answers"
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     title = Column(String, nullable=False, unique=True)
-    is_correct = Column(Boolean, nullable=False)
     question_id = Column(Integer, ForeignKey('questions.id', ondelete='CASCADE'),
                          nullable=False)
 
     def to_dc(self):
-        return Answer(title=self.title, is_correct=self.is_correct)
+        return Answer(title=self.title, )
