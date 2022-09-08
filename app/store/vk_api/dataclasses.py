@@ -17,5 +17,5 @@ class Update:
 
 @dataclass
 class Message:
-    user_id: int
+    receiver_id: int
     text: str
