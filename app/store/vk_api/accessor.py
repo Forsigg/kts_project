@@ -104,7 +104,7 @@ class VkApiAccessor(BaseAccessor):
                 API_PATH,
                 "messages.send",
                 params={
-                    "user_id": message.user_id,
+                    "user_id": message.receiver_id,
                     "random_id": random.randint(1, 2**32),
                     "peer_id": "-" + str(self.app.config.bot.group_id),
                     "message": message.text,
@@ -122,7 +122,7 @@ class VkApiAccessor(BaseAccessor):
                 "messages.send",
                 params={
                     "random_id": random.randint(1, 2**32),
-                    "peer_id": message.user_id,
+                    "peer_id": message.receiver_id,
                     "message": message.text,
                     "access_token": self.app.config.bot.token,
                 },
