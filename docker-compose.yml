@@ -1,0 +1,29 @@
+version: "3.2"
+
+services:
+  db:
+    image: postgres:latest
+    container_name: db
+    volumes:
+      - "dbdata:/var/lib/postgresql/data"
+    environment:
+      - POSTGRES_USER=kts_user
+      - POSTGRES_PASSWORD=kts_pass
+      - POSTGRES_DB=kts
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend
+    command: bash -c "alembic upgrade head && python main.py"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+
+volumes:
+  dbdata:
