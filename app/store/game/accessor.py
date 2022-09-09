@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from sqlalchemy import select, update
 
@@ -49,3 +49,17 @@ class GameAccessor(BaseAccessor):
             scores = res.scalars().all()
             scores = [score.to_dc() for score in scores]
         return scores
+
+    async def add_start_score(self, game_id: int, users_id: list[int]) -> List[Score]:
+        scores = [ScoreModel(game_id=game_id, user_id=user_id) for user_id in users_id]
+        async with self.app.database.session.begin() as session:
+            session.add_all(scores)
+        return [score.to_dc() for score in scores]
+
+    async def create_game_and_scores(self, users_id: list[int]) -> Dict:
+        game = await self.create_game()
+        scores = await self.add_start_score(game_id=game.id, users_id=users_id)
+        return {
+            'game': game,
+            'scores': scores,
+        }
