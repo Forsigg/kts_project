@@ -6,6 +6,7 @@ from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
+from app.game.models import User
 from app.store.vk_api.dataclasses import Message, Update, UpdateObject
 from app.store.vk_api.poller import Poller
 
@@ -131,7 +132,11 @@ class VkApiAccessor(BaseAccessor):
             data = await resp.json()
             self.logger.info(data)
 
-    async def get_conversation_members(self, peer_id: int) -> list[str]:
+    async def get_conversation_members(self, peer_id: int) -> typing.List[User]:
+        """
+        Метод возвращает список кортежей (на каждого пользователя),
+        элементами которых являются строка (имя и фамилия) и целое число (vk id участника)
+        """
         async with self.session.get(
                 self._build_query(
                     API_PATH,
@@ -145,6 +150,6 @@ class VkApiAccessor(BaseAccessor):
             data = await resp.json()
             self.logger.info(data)
             users = data['response']['profiles']
-            users_names = [f"{user['first_name'] + ' ' +  user['last_name']}" for user in users]
-            return users_names
+            users = [User(id=user['id'], full_name=f"{user['first_name']} {user['last_name']}") for user in users]
+            return users
 

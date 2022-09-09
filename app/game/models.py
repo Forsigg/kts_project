@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from sqlalchemy import Column, Integer, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, ForeignKey, Boolean, String
 
 from app.store.database.sqlalchemy_base import db
 
@@ -7,6 +7,7 @@ from app.store.database.sqlalchemy_base import db
 @dataclass
 class User:
     id: int
+    full_name: str
 
 
 @dataclass
@@ -26,9 +27,10 @@ class Game:
 class UserModel(db):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
+    full_name = Column(String, nullable=False)
 
     def to_dc(self):
-        return User(id=self.id)
+        return User(id=self.id, full_name=self.full_name)
 
 
 class ScoreModel(db):
