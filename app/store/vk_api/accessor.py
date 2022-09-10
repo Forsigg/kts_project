@@ -8,7 +8,7 @@ from aiohttp.client import ClientSession
 from app.base.base_accessor import BaseAccessor
 from app.game.models import User
 from app.store.vk_api.dataclasses import Message, Update, UpdateObject
-from app.store.vk_api.poller import Poller
+from app.store.vk_api.worker import Worker
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -22,7 +22,7 @@ class VkApiAccessor(BaseAccessor):
         self.session: Optional[ClientSession] = None
         self.key: Optional[str] = None
         self.server: Optional[str] = None
-        self.poller: Optional[Poller] = None
+        self.poller: Optional[Worker] = None
         self.ts: Optional[int] = None
 
     async def connect(self, app: "Application"):
@@ -31,7 +31,7 @@ class VkApiAccessor(BaseAccessor):
             await self._get_long_poll_service()
         except Exception as e:
             self.logger.error("Exception", exc_info=e)
-        self.poller = Poller(app.store)
+        self.poller = Worker(app.store)
         self.logger.info("start polling")
         await self.poller.start()
 

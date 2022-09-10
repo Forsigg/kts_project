@@ -5,7 +5,7 @@ from typing import Optional
 from app.store import Store
 
 
-class Poller:
+class Worker:
     def __init__(self, store: Store):
         self.store = store
         self.is_running = False
