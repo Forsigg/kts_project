@@ -85,14 +85,15 @@ class VkApiAccessor(BaseAccessor):
             raw_updates = data.get("updates", [])
             updates = []
             for update in raw_updates:
+                message = update['object']['message']
                 updates.append(
                     Update(
                         type=update["type"],
                         object=UpdateObject(
-                            id=update["object"]['message']["id"],
-                            user_id=update["object"]['message']["from_id"],
-                            body=update["object"]['message']["text"],
-                            peer_id=update['object']['message']['peer_id']
+                            id=message["id"],
+                            user_id=message["from_id"],
+                            body=message["text"],
+                            peer_id=message['peer_id']
                         ),
                     )
                 )
