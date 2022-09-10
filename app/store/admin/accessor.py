@@ -22,6 +22,15 @@ class AdminAccessor(BaseAccessor):
         else:
             return None
 
+    async def create_first_admin(self):
+        admin_from_db = await self.app.store.admins.get_by_email(
+            self.app.config.admin.email)
+        if admin_from_db is None:
+            await self.app.store.admins.create_admin(
+                email=self.app.config.admin.email,
+                password=self.app.config.admin.password)
+            print('first admin created')
+
     async def create_admin(self, email: str, password: str) -> Admin:
         async with self.app.database.session.begin() as session:
             passw = sha256(password.encode()).hexdigest()
