@@ -16,19 +16,23 @@ class Database:
         self._db: Optional[declarative_base] = None
         self.session: Optional[AsyncSession] = None
 
-    async def connect(self,  *_: list, **__: dict) -> None:
+    async def connect(self, *_: list, **__: dict) -> None:
         self._db = db
         db_user = self.app.config.database.user
         db_password = self.app.config.database.password
         db_port = self.app.config.database.port
         db_name = self.app.config.database.database
-        self._engine = create_async_engine(f"postgresql+asyncpg://{db_user}:"
-                                           f"{db_password}@localhost:"
-                                           f"{db_port}/{db_name}",
-                                           future=True)
+        self._engine = create_async_engine(
+            f"postgresql+asyncpg://{db_user}:"
+            f"{db_password}@localhost:"
+            f"{db_port}/{db_name}",
+            future=True,
+        )
 
-        self.session = sessionmaker(self._engine, expire_on_commit=False, class_=AsyncSession)
-        print('database connected')
+        self.session = sessionmaker(
+            self._engine, expire_on_commit=False, class_=AsyncSession
+        )
+        print("database connected")
 
     async def disconnect(self, *_: list, **__: dict) -> None:
         if self._engine:

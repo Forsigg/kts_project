@@ -25,7 +25,7 @@ class Game:
 
 
 class UserModel(db):
-    __tablename__ = 'users'
+    __tablename__ = "users"
     id = Column(Integer, primary_key=True)
     full_name = Column(String, nullable=False)
 
@@ -34,20 +34,25 @@ class UserModel(db):
 
 
 class ScoreModel(db):
-    __tablename__ = 'scores'
+    __tablename__ = "scores"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    game_id = Column(Integer, ForeignKey('games.id', ondelete='CASCADE'), nullable=False)
-    user_id = Column(Integer, ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    game_id = Column(
+        Integer, ForeignKey("games.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
     total = Column(Integer, default=0)
 
     def to_dc(self):
-        return Score(id=self.id, game_id=self.game_id, player=User(
-            id=self.user_id
-        ), total=self.total)
+        return Score(
+            id=self.id,
+            game_id=self.game_id,
+            player=User(id=self.user_id),
+            total=self.total,
+        )
 
 
 class GameModel(db):
-    __tablename__ = 'games'
+    __tablename__ = "games"
     id = Column(Integer, primary_key=True, autoincrement=True)
     is_active = Column(Boolean, nullable=False, default=False)
 
@@ -56,9 +61,11 @@ class GameModel(db):
 
 
 class UsersGamesModel(db):
-    __tablename__ = 'users_games'
+    __tablename__ = "users_games"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    game_id = Column(Integer, ForeignKey('games.id', ondelete='CASCADE'), nullable=False)
-
-
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    game_id = Column(
+        Integer, ForeignKey("games.id", ondelete="CASCADE"), nullable=False
+    )
