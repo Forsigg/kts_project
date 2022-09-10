@@ -5,7 +5,7 @@ from aiohttp_apispec import request_schema, response_schema, docs
 from aiohttp_session import new_session, get_session
 
 from app.admin.models import Admin
-from app.admin.schemes import AdminResponseSchema, AdminValidationSchema
+from app.admin.schemes import AdminSchema, AdminValidationSchema
 from app.web.app import View
 from app.web.mixins import AuthRequiredMixin
 from app.web.utils import json_response
@@ -14,7 +14,7 @@ from app.web.utils import json_response
 class AdminLoginView(View):
     @docs(tags=['admin'], summary='Login admin', description='Method for login admin')
     @request_schema(AdminValidationSchema)
-    @response_schema(AdminResponseSchema)
+    @response_schema(AdminSchema)
     async def post(self):
         data = self.request['data']
         email = data['email']
@@ -24,7 +24,7 @@ class AdminLoginView(View):
         if admin_from_db:
             if str(sha256(password.encode('utf-8')).hexdigest()) == admin_from_db.password:
                 session = await new_session(request=self.request)
-                response = AdminResponseSchema().dump(admin_from_db)
+                response = AdminSchema().dump(admin_from_db)
                 session['admin'] = response
                 return json_response(data=response)
 
@@ -33,7 +33,7 @@ class AdminLoginView(View):
 
 class AdminCurrentView(AuthRequiredMixin, View):
     @docs(tags=['admin'], summary='Current admin', description='Method returns current admin if he already log in')
-    @response_schema(AdminResponseSchema)
+    @response_schema(AdminSchema)
     async def get(self):
         session = await get_session(self.request)
         try:
@@ -41,5 +41,5 @@ class AdminCurrentView(AuthRequiredMixin, View):
         except KeyError:
             return json_response()
         admin_from_db = await self.request.app.store.admins.get_by_email(admin_email)
-        admin = AdminResponseSchema().dump(admin_from_db)
+        admin = AdminSchema().dump(admin_from_db)
         return json_response(data=admin)
