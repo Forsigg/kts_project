@@ -85,7 +85,7 @@ class VkApiAccessor(BaseAccessor):
             raw_updates = data.get("updates", [])
             updates = []
             for update in raw_updates:
-                message = update['object']['message']
+                message = update["object"]["message"]
                 updates.append(
                     Update(
                         type=update["type"],
@@ -93,7 +93,7 @@ class VkApiAccessor(BaseAccessor):
                             id=message["id"],
                             user_id=message["from_id"],
                             body=message["text"],
-                            peer_id=message['peer_id']
+                            peer_id=message["peer_id"],
                         ),
                     )
                 )
@@ -134,18 +134,19 @@ class VkApiAccessor(BaseAccessor):
 
     async def get_conversation_members(self, peer_id: int) -> list[str]:
         async with self.session.get(
-                self._build_query(
-                    API_PATH,
-                    'messages.getConversationMembers',
-                    params={
-                        "peer_id": peer_id,
-                        "access_token": self.app.config.bot.token,
-                    },
-                )
+            self._build_query(
+                API_PATH,
+                "messages.getConversationMembers",
+                params={
+                    "peer_id": peer_id,
+                    "access_token": self.app.config.bot.token,
+                },
+            )
         ) as resp:
             data = await resp.json()
             self.logger.info(data)
-            users = data['response']['profiles']
-            users_names = [f"{user['first_name'] + ' ' +  user['last_name']}" for user in users]
+            users = data["response"]["profiles"]
+            users_names = [
+                f"{user['first_name'] + ' ' +  user['last_name']}" for user in users
+            ]
             return users_names
-

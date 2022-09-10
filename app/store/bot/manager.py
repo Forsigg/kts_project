@@ -17,10 +17,12 @@ class BotManager:
         if updates:
             for update in updates:
                 if update.object.peer_id > 2000000000:
-                    await self.app.store.vk_api.send_group_message(Message(
-                        user_id=update.object.peer_id,
-                        text=update.object.body,
-                    ))
+                    await self.app.store.vk_api.send_group_message(
+                        Message(
+                            user_id=update.object.peer_id,
+                            text=update.object.body,
+                        )
+                    )
                 else:
                     await self.app.store.vk_api.send_message(
                         Message(

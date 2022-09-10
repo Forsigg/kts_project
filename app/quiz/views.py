@@ -16,7 +16,7 @@ from app.web.utils import json_response
 
 
 class ThemeAddView(AuthRequiredMixin, View):
-    @docs(tags=['quiz', 'theme'], sumary='add theme', description='Add theme in quiz')
+    @docs(tags=["quiz", "theme"], sumary="add theme", description="Add theme in quiz")
     @request_schema(ThemeSchema)
     @response_schema(ThemeSchema)
     async def post(self):
@@ -30,27 +30,35 @@ class ThemeAddView(AuthRequiredMixin, View):
 
 
 class ThemeListView(AuthRequiredMixin, View):
-    @docs(tags=['quiz', 'theme'], sumary='get list themes',
-          description='Get list all themes')
+    @docs(
+        tags=["quiz", "theme"],
+        sumary="get list themes",
+        description="Get list all themes",
+    )
     @response_schema(ThemeListSchema)
     async def get(self):
         themes = await self.store.quizzes.list_themes()
-        return json_response(data={
-            'themes': [ThemeSchema().dump(theme) for theme in themes]
-        })
+        return json_response(
+            data={"themes": [ThemeSchema().dump(theme) for theme in themes]}
+        )
 
 
 class QuestionAddView(AuthRequiredMixin, View):
-    @docs(tags=['quiz', 'question'], sumary='add question',
-          description='Add question in quiz')
+    @docs(
+        tags=["quiz", "question"],
+        sumary="add question",
+        description="Add question in quiz",
+    )
     @request_schema(QuestionSchema)
     @response_schema(QuestionSchema)
     async def post(self):
         data = self.data
-        title, theme_id = data['title'], data['theme_id']
-        answers = data['answers']
-        answers = [Answer(title=answer['title'], is_correct=answer['is_correct']) for
-                   answer in answers]
+        title, theme_id = data["title"], data["theme_id"]
+        answers = data["answers"]
+        answers = [
+            Answer(title=answer["title"], is_correct=answer["is_correct"])
+            for answer in answers
+        ]
 
         if await self.request.app.store.quizzes.get_question_by_title(title):
             raise HTTPConflict
@@ -69,9 +77,7 @@ class QuestionAddView(AuthRequiredMixin, View):
             raise HTTPBadRequest
 
         question = await self.request.app.store.quizzes.create_question(
-            title=title,
-            theme_id=theme_id,
-            answers=answers
+            title=title, theme_id=theme_id, answers=answers
         )
 
         response = QuestionSchema().dump(question)
@@ -79,14 +85,19 @@ class QuestionAddView(AuthRequiredMixin, View):
 
 
 class QuestionListView(AuthRequiredMixin, View):
-    @docs(tags=['quiz', 'question'], sumary='get list question',
-          description='Get list question')
+    @docs(
+        tags=["quiz", "question"],
+        sumary="get list question",
+        description="Get list question",
+    )
     @querystring_schema(ThemeIdSchema)
     @response_schema(ListQuestionSchema)
     async def get(self):
         questions_from_db = await self.request.app.store.quizzes.list_questions()
-        return json_response(data={
-            'questions': [
-                QuestionSchema().dump(question) for question in questions_from_db
-            ]
-        })
+        return json_response(
+            data={
+                "questions": [
+                    QuestionSchema().dump(question) for question in questions_from_db
+                ]
+            }
+        )
