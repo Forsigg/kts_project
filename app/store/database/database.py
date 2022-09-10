@@ -28,15 +28,6 @@ class Database:
                                            future=True)
 
         self.session = sessionmaker(self._engine, expire_on_commit=False, class_=AsyncSession)
-
-        # first admin check
-        admin_from_db = await self.app.store.admins.get_by_email(self.app.config.admin.email)
-        if admin_from_db is None:
-            await self.app.store.admins.create_admin(
-                email=self.app.config.admin.email,
-                password=self.app.config.admin.password)
-            print('first admin created')
-
         print('database connected')
 
     async def disconnect(self, *_: list, **__: dict) -> None:
