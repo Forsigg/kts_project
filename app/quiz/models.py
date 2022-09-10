@@ -1,39 +1,8 @@
-from dataclasses import dataclass
-from typing import Optional
-
 from sqlalchemy import Column, BigInteger, String, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
+from app.quiz.schemes import Theme, Question, Answer
 from app.store.database.sqlalchemy_base import db
-
-
-@dataclass
-class Theme:
-    id: Optional[int]
-    title: str
-
-    def to_model(self):
-        return ThemeModel(title=self.title)
-
-
-@dataclass
-class Question:
-    id: Optional[int]
-    title: str
-    theme_id: int
-    answers: list["Answer"]
-
-    def to_model(self):
-        answers = [answer.to_model() for answer in self.answers]
-        return QuestionModel(title=self.title, theme_id=self.theme_id, answers=answers)
-
-
-@dataclass
-class Answer:
-    title: str
-
-    def to_model(self):
-        return AnswerModel(title=self.title)
 
 
 class ThemeModel(db):

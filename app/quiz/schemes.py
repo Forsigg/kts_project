@@ -1,21 +1,45 @@
+from typing import Optional
+
+import marshmallow_dataclass
+from marshmallow_dataclass import dataclass
 from marshmallow import Schema, fields
 
-
-class ThemeSchema(Schema):
-    id = fields.Int(required=False)
-    title = fields.Str(required=True)
+from app.quiz.models import ThemeModel, QuestionModel, AnswerModel
 
 
-class QuestionSchema(Schema):
-    id = fields.Int(required=False)
-    title = fields.Str(required=True)
-    theme_id = fields.Int(required=True)
-    answers = fields.Nested("AnswerSchema", many=True, required=True)
+@dataclass
+class Theme:
+    id: Optional[int]
+    title: str
+
+    def to_model(self):
+        return ThemeModel(title=self.title)
 
 
-class AnswerSchema(Schema):
-    title = fields.Str(required=True)
-    is_correct = fields.Bool(required=True)
+@dataclass
+class Question:
+    id: Optional[int]
+    title: str
+    theme_id: int
+    answers: list["Answer"]
+
+    def to_model(self):
+        answers = [answer.to_model() for answer in self.answers]
+        return QuestionModel(title=self.title, theme_id=self.theme_id, answers=answers)
+
+
+@dataclass
+class Answer:
+    title: str
+    is_correct: bool
+
+    def to_model(self):
+        return AnswerModel(title=self.title)
+
+
+ThemeSchema = marshmallow_dataclass.class_schema(Theme)
+QuestionSchema = marshmallow_dataclass.class_schema(Question)
+AnswerSchema = marshmallow_dataclass.class_schema(Answer)
 
 
 class ThemeListSchema(Schema):
