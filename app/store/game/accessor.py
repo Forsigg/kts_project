@@ -23,14 +23,16 @@ class GameAccessor(BaseAccessor):
 
         return game.to_dc()
 
-    async def change_game_is_active(self, game_id: int) -> None:
+    async def change_game_not_active(self, game_id: int) -> None:
         async with self.app.database.session.begin() as session:
-            pass
-            # query = update(GameModel).where(GameModel.id == game_id).values(is_active=)
+            query = update(GameModel).where(GameModel.id == game_id).values(
+                is_active=False)
+            await session.execute(query)
+            # session.flush()
 
-    async def create_user(self, user_id: int) -> User:
+    async def create_user(self, user_id: int, user_full_name: str) -> User:
         async with self.app.database.session.begin() as session:
-            user = UserModel(id=user_id)
+            user = UserModel(id=user_id, full_name=user_full_name)
             session.add(user)
         return user.to_dc()
 
@@ -50,16 +52,8 @@ class GameAccessor(BaseAccessor):
             scores = [score.to_dc() for score in scores]
         return scores
 
-    async def add_start_score(self, game_id: int, users_id: list[int]) -> List[Score]:
+    async def create_start_score(self, game_id: int, users_id: list[int]) -> List[Score]:
         scores = [ScoreModel(game_id=game_id, user_id=user_id) for user_id in users_id]
         async with self.app.database.session.begin() as session:
             session.add_all(scores)
         return [score.to_dc() for score in scores]
-
-    async def create_game_and_scores(self, users_id: list[int]) -> Dict:
-        game = await self.create_game()
-        scores = await self.add_start_score(game_id=game.id, users_id=users_id)
-        return {
-            'game': game,
-            'scores': scores,
-        }

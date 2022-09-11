@@ -1,3 +1,4 @@
+import random
 from typing import Optional
 
 from sqlalchemy import select
@@ -69,7 +70,6 @@ class QuizAccessor(BaseAccessor):
         self, title: str, theme_id: int, answers: list[Answer]
     ) -> Question:
         async with self.app.database.session.begin() as session:
-            print(answers, type(answers))
             question = QuestionModel(
                 title=title,
                 theme_id=theme_id,
@@ -90,6 +90,23 @@ class QuizAccessor(BaseAccessor):
             if question:
                 return question.to_dc()
         return None
+
+    async def get_question_by_id(self, question_id: int) -> Optional[Question]:
+        async with self.app.database.session.begin() as session:
+            query = select(QuestionModel).where(QuestionModel.id == question_id)
+            res = await session.execute(query)
+            question = res.scalar()
+            if question:
+                return question.to_dc()
+        return None
+
+    async def get_random_question(self) -> Question:
+        q_id = random.randint(1, 100)
+        question = self.app.store.quizzes.get_question_by_id(q_id)
+        if question is not None:
+            return question
+        else:
+            await self.get_random_question()
 
     async def list_questions(self, theme_id: Optional[int] = None) -> list[Question]:
         async with self.app.database.session.begin() as session:

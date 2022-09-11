@@ -22,7 +22,7 @@ class AdminAccessor(BaseAccessor):
         else:
             return None
 
-    async def create_first_admin(self):
+    async def create_first_admin(self, *_, **__):
         admin_from_db = await self.app.store.admins.get_by_email(
             self.app.config.admin.email
         )

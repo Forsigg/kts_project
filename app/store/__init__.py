@@ -1,6 +1,8 @@
 import typing
 
+from app.game.game_manager import GameManager
 from app.store.database.database import Database
+from app.store.game.accessor import GameAccessor
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -14,6 +16,7 @@ class Store:
         from app.store.vk_api.accessor import VkApiAccessor
 
         self.quizzes = QuizAccessor(app)
+        self.games = GameAccessor(app)
         self.admins = AdminAccessor(app)
         self.vk_api = VkApiAccessor(app)
         self.bots_manager = BotManager(app)
@@ -22,6 +25,6 @@ class Store:
 def setup_store(app: "Application"):
     app.database = Database(app)
     app.on_startup.append(app.database.connect)
-    app.on_startup.append(app.store.admins.create_first_admin())
     app.on_cleanup.append(app.database.disconnect)
     app.store = Store(app)
+    app.on_startup.append(app.store.admins.create_first_admin)

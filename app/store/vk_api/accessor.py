@@ -1,3 +1,4 @@
+import json
 import random
 import typing
 from typing import Optional
@@ -117,19 +118,24 @@ class VkApiAccessor(BaseAccessor):
             data = await resp.json()
             self.logger.info(data)
 
-    async def send_group_message(self, message: Message) -> None:
-        async with self.session.get(
-            self._build_query(
-                API_PATH,
-                "messages.send",
-                params={
-                    "random_id": random.randint(1, 2**32),
-                    "peer_id": message.receiver_id,
-                    "message": message.text,
-                    "access_token": self.app.config.bot.token,
-                },
-            )
-        ) as resp:
+    async def send_group_message(self, message: Message, keyboard: json = None) -> None:
+        if keyboard is None:
+            url = self._build_query(API_PATH, "messages.send",
+                                    params={
+                                        "random_id": random.randint(1, 2 ** 32),
+                                        "peer_id": message.receiver_id,
+                                        "message": message.text,
+                                        "access_token": self.app.config.bot.token,
+                                    })
+        else:
+            url = self._build_query(API_PATH, "messages.send",
+                                    params={
+                                        "random_id": random.randint(1, 2 ** 32),
+                                        "peer_id": message.receiver_id,
+                                        "access_token": self.app.config.bot.token,
+                                        "keyboard": keyboard
+                                    })
+        async with self.session.get(url) as resp:
             data = await resp.json()
             self.logger.info(data)
 

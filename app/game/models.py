@@ -7,7 +7,7 @@ from app.store.database.sqlalchemy_base import db
 @dataclass
 class User:
     id: int
-    full_name: str
+    full_name: str = None
 
 
 @dataclass
@@ -27,7 +27,7 @@ class Game:
 class UserModel(db):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
-    full_name = Column(String, nullable=False)
+    full_name = Column(String, nullable=True)
 
     def to_dc(self):
         return User(id=self.id, full_name=self.full_name)
@@ -39,7 +39,7 @@ class ScoreModel(db):
     game_id = Column(
         Integer, ForeignKey("games.id", ondelete="CASCADE"), nullable=False
     )
-    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     total = Column(Integer, default=0)
 
     def to_dc(self):
