@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from sqlalchemy import Column, Integer, ForeignKey, Boolean, String
+from sqlalchemy.orm import relationship
 
 from app.store.database.sqlalchemy_base import db
 
@@ -69,3 +70,15 @@ class UsersGamesModel(db):
     game_id = Column(
         Integer, ForeignKey("games.id", ondelete="CASCADE"), nullable=False
     )
+
+
+class StateModel(db):
+    __tablename__ = 'states'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    game_id = Column(Integer, ForeignKey('games.id', ondelete='CASCADE'), nullable=False)
+    question_id = Column(Integer, ForeignKey('questions.id'), nullable=True)
+    chat_id = Column(Integer, nullable=False)
+    scores = relationship("scores")
+    users = relationship('users')
+    state = Column(String, nullable=False)
+

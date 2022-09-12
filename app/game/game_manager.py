@@ -36,6 +36,11 @@ class GameManager:
                 return True
         return False
 
+    async def is_game_over(self, chat_id: int) -> bool:
+        if len(self.users) == 1:
+            return True
+        return False
+
     async def start_game(self, chat_id: int) -> None:
         self.state = 'CREATED'
         self.chat_id = chat_id

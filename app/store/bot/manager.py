@@ -64,24 +64,27 @@ class BotManager:
                 message_text = message.body.lower()
                 if message.peer_id > 2000000000:
 
+                    game = await self.is_game_exist(message.peer_id)
+
                     if message_text == "начать игру":
                         await self.bot_start_game(message.peer_id)
 
-                    elif message_text == 'закончить игру':
+                    elif message_text == 'закончить игру' or await game.is_game_over(message.peer_id):
                         await self.bot_end_game(message.peer_id)
 
                     elif message_text == 'ответ' and not await self.is_ready_to_answer(message.peer_id):
-                        game = await self.is_game_exist(message.peer_id)
-                        if game.is_user_kicked(user_id):
+                        if await game.is_user_kicked(user_id):
                             pass
                         else:
                             game.state = "CHECKING"
 
                     elif await self.is_ready_to_answer(message.peer_id):
-                        game = await self.is_game_exist(message.peer_id)
                         if not game.is_user_kicked(user_id):
                             answer = Answer(title=message_text)
                             if await game.is_correct_answer(answer):
                                 await game.add_point(user_id)
                             else:
                                 await game.user_kick(user_id)
+
+
+
