@@ -73,7 +73,7 @@ class QuizAccessor(BaseAccessor):
             question = QuestionModel(
                 title=title,
                 theme_id=theme_id,
-                answers=[answer.to_model() for answer in answers],
+                answers=[AnswerModel(title=answer.title) for answer in answers],
             )
             session.add(question)
         return question.to_dc()
@@ -93,7 +93,7 @@ class QuizAccessor(BaseAccessor):
 
     async def get_question_by_id(self, question_id: int) -> Optional[Question]:
         async with self.app.database.session.begin() as session:
-            query = select(QuestionModel).where(QuestionModel.id == question_id)
+            query = select(QuestionModel).where(QuestionModel.id == question_id).options(joinedload(QuestionModel.answers))
             res = await session.execute(query)
             question = res.scalar()
             if question:

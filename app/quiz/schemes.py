@@ -1,6 +1,6 @@
 from typing import Optional
 
-from marshmallow_dataclass import class_schema, dataclass
+from marshmallow_dataclass import dataclass
 from marshmallow import Schema, fields
 
 
@@ -13,7 +13,6 @@ class Theme:
 @dataclass
 class Answer:
     title: str
-    is_correct: bool
 
 
 @dataclass

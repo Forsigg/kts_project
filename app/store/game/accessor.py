@@ -44,6 +44,20 @@ class GameAccessor(BaseAccessor):
             scores = [score.to_dc() for score in scores]
         return scores
 
+    async def add_one_point_to_score(self, score_id: int) -> Score:
+        async with self.app.database.session.begin() as session:
+            score = select(ScoreModel).where(ScoreModel.id == score_id)
+            score.total += 1
+            session.commit()
+        return score.to_dc()
+
+    async def update_score_to_zero_point(self, score_id: int) -> Score:
+        async with self.app.database.session.begin() as session:
+            score = select(ScoreModel).where(ScoreModel.id == score_id)
+            score.total = 0
+            session.commit()
+        return score.to_dc()
+
     async def get_scores_by_user_id(self, user_id: int) -> List[Score]:
         async with self.app.database.session.begin() as session:
             query = select(ScoreModel).where(ScoreModel.user_id == user_id)

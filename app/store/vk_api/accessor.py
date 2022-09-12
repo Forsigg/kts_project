@@ -23,7 +23,7 @@ class VkApiAccessor(BaseAccessor):
         self.session: Optional[ClientSession] = None
         self.key: Optional[str] = None
         self.server: Optional[str] = None
-        self.poller: Optional[Worker] = None
+        self.worker: Optional[Worker] = None
         self.ts: Optional[int] = None
 
     async def connect(self, app: "Application"):
@@ -32,15 +32,15 @@ class VkApiAccessor(BaseAccessor):
             await self._get_long_poll_service()
         except Exception as e:
             self.logger.error("Exception", exc_info=e)
-        self.poller = Worker(app.store)
+        self.worker = Worker(app.store)
         self.logger.info("start polling")
-        await self.poller.start()
+        await self.worker.start()
 
     async def disconnect(self, app: "Application"):
         if self.session:
             await self.session.close()
-        if self.poller:
-            await self.poller.stop()
+        if self.worker:
+            await self.worker.stop()
 
     @staticmethod
     def _build_query(host: str, method: str, params: dict) -> str:
