@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 import yaml
 
@@ -12,11 +13,10 @@ from alembic import context
 from app.admin.models import AdminModel
 from app.web.config import DatabaseConfig
 
-config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-config_path = '../config.yml.'
+config_path = Path('.').parent.joinpath('config.yml')
 with open(config_path, "r") as f:
     raw_config = yaml.safe_load(f)
 
