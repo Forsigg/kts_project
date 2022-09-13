@@ -1,8 +1,17 @@
+import enum
 from dataclasses import dataclass
-from sqlalchemy import Column, Integer, ForeignKey, Boolean, String
+from typing import List
+
+from sqlalchemy import Column, Integer, ForeignKey, Boolean, String, Enum
 from sqlalchemy.orm import relationship
 
+from app.quiz.schemes import Question
 from app.store.database.sqlalchemy_base import db
+
+
+@dataclass
+class StateEnum(enum.Enum):
+    pass
 
 
 @dataclass
@@ -22,7 +31,11 @@ class Score:
 @dataclass
 class Game:
     id: int
-    is_active: bool
+    chat_id: int
+    scores: List[Score]
+    question: Question
+    state: StateEnum
+
 
 
 class UserModel(db):
@@ -71,14 +84,14 @@ class UsersGamesModel(db):
         Integer, ForeignKey("games.id", ondelete="CASCADE"), nullable=False
     )
 
-
-class StateModel(db):
-    __tablename__ = 'states'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    game_id = Column(Integer, ForeignKey('games.id', ondelete='CASCADE'), nullable=False)
-    question_id = Column(Integer, ForeignKey('questions.id'), nullable=True)
-    chat_id = Column(Integer, nullable=False)
-    scores = relationship("scores")
-    users = relationship('users')
-    state = Column(String, nullable=False)
-
+#
+# class StateModel(db):
+#     __tablename__ = 'states'
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#     game_id = Column(Integer, ForeignKey('games.id', ondelete='CASCADE'), nullable=False)
+#     question_id = Column(Integer, ForeignKey('questions.id'), nullable=True)
+#     chat_id = Column(Integer, nullable=False)
+#     scores = relationship("scores")
+#     users = relationship('users')
+#     state = Column(String, nullable=False)
+#
