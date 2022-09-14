@@ -1,6 +1,6 @@
 import typing
 
-from app.game.game_manager import GameManager
+
 from app.store.database.database import Database
 from app.store.game.accessor import GameAccessor
 

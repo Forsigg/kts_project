@@ -2,7 +2,7 @@ import enum
 from dataclasses import dataclass
 from typing import List
 
-from sqlalchemy import Column, Integer, ForeignKey, String, Enum
+from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 
 from app.store.database.sqlalchemy_base import db
@@ -43,7 +43,7 @@ class Game:
 class StateModel(db):
     __tablename__ = 'states'
     id = Column(Integer, primary_key=True)
-    title = Column(Enum(StateEnum))
+    title = Column(String, nullable=False)
 
 
 class UserModel(db):
