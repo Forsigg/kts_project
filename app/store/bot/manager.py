@@ -62,17 +62,18 @@ class BotManager:
                 user_id = update.object.user_id
                 message = update.object
                 message_text = message.body.lower()
-                if message.peer_id > 2000000000:
+                chat_id = message.peer_id
+                if chat_id > 2000000000:
 
-                    game = await self.is_game_exist(message.peer_id)
+                    game = await self.app.store.games.get_active_game_by_chat_id()
 
-                    if message_text == "начать игру":
-                        await self.bot_start_game(message.peer_id)
+                    if message_text == "начать игру" and game is None:
+                        await self.bot_start_game(chat_id)
 
-                    elif message_text == 'закончить игру' or await game.is_game_over(message.peer_id):
-                        await self.bot_end_game(message.peer_id)
+                    elif message_text == 'закончить игру' and game:
+                        await self.bot_end_game(chat_id)
 
-                    elif message_text == 'ответ' and not await self.is_ready_to_answer(message.peer_id):
+                    elif message_text == 'ответ' and not await self.is_ready_to_answer(chat_id):
                         if await game.is_user_kicked(user_id):
                             pass
                         else:

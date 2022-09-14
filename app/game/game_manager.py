@@ -10,14 +10,19 @@ if TYPE_CHECKING:
 
 
 class GameManager:
-    STATES = ('CREATED', 'WAITING', 'CHECKING', 'DONE')
+    STATES = {
+        1: "started",
+        2: "question",
+        3: "waiting",
+        4: "checking",
+        5: "done"
+        }
 
     def __init__(self, app: "Application") -> None:
         self.game: Optional[Game] = None
         self.app = app
-        self.current_question: Optional[Question] = None
+        self.question: Optional[Question] = None
         self.state: Optional[str] = None
-        self.is_active: bool = True
         self.chat_id: Optional[int] = None
         self.scores: Optional[List[Score]] = None
         self.users: Optional[List[User]] = None
@@ -30,22 +35,23 @@ class GameManager:
             await self.send_question()
 
     async def is_correct_answer(self, answer: Answer) -> bool:
-        answers = self.current_question.answers
+        answers = self.question.answers
         for answer_from_question in answers:
             if answer.title == answer_from_question.title:
                 return True
         return False
 
-    async def is_game_over(self, chat_id: int) -> bool:
+    async def is_game_over(self) -> bool:
         if len(self.users) == 1:
             return True
         return False
 
     async def start_game(self, chat_id: int) -> None:
-        self.state = 'CREATED'
+        self.state = self.STATES[1]
         self.chat_id = chat_id
         self.users = await self.app.store.vk_api.get_conversation_members(peer_id=chat_id)
         self.game = await self.app.store.games.create_game()
+        self.question = await self.app.store.quizzes.get_question_by_id(self.game.question_id)
         for user in self.users:
             try:
                 await self.app.store.games.create_user(user.id, user.full_name)
@@ -60,15 +66,16 @@ class GameManager:
             text=f'Добрый день! Начинаем игру 100 к 1. Игра № {self.game.id}, участники: '
                  f'{",".join([user.full_name for user in self.users])}'
         ))
+        self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=2)
+        self.state = self.STATES[2]
 
     async def send_question(self) -> None:
-        question = self.app.store.quizzes.get_random_question()
-        self.current_question = question
         await self.app.store.vk_api.send_group_message(Message(
             receiver_id=self.chat_id,
-            text=f"{question.title}"
+            text=f"{self.question.title}"
         ))
-        self.state = 'WAITING'
+        self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=3)
+        self.state = self.STATES[3]
 
     async def user_kick(self, user_id: int) -> None:
         for user in self.users:
@@ -93,7 +100,7 @@ class GameManager:
         return True
 
     async def add_point(self, user_id: int) -> None:
-        old_score = list(filter(lambda x: x.player.id == user_id, self.scores))[0]
+        old_score = list(filter(lambda x: x.user_id.id == user_id, self.scores))[0]
         new_score = await self.app.store.games.add_one_point_to_score(score_id=old_score.id)
         self.scores.remove(old_score)
         self.scores.append(new_score)
@@ -123,7 +130,7 @@ class GameManager:
         self.game = None
         self.users = None
         self.scores = None
-        self.current_question = None
+        self.question = None
         self.is_active = False
 
 
