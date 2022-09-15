@@ -1,7 +1,7 @@
 import random
 from typing import Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from app.base.base_accessor import BaseAccessor
@@ -102,9 +102,11 @@ class QuizAccessor(BaseAccessor):
 
     async def get_random_question(self) -> Question:
         async with self.app.database.session.begin() as session:
-            question_count = session.query(QuestionModel).count()
+            query = select(QuestionModel)
+            res = await session.execute(query)
+            question_count = len(res.scalars().all())
         q_id = random.randint(1, question_count)
-        question = self.app.store.quizzes.get_question_by_id(q_id)
+        question = await self.app.store.quizzes.get_question_by_id(q_id)
         if question is not None:
             return question
         else:

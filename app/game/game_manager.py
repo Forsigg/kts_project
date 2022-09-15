@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional, List, TYPE_CHECKING, Tuple
 from sqlalchemy.exc import IntegrityError
 
@@ -9,6 +10,10 @@ if TYPE_CHECKING:
     from app.web.app import Application
 
 
+def run_async_func(coro):
+    task = asyncio.create_task(coro)
+
+
 class GameManager:
     STATES = {
         1: "started",
@@ -18,28 +23,37 @@ class GameManager:
         5: "done"
         }
 
-    def __init__(self, app: "Application") -> None:
-        self.game: Optional[Game] = None
+    def __init__(self, app: "Application", game: Game = None) -> None:
         self.app = app
-        self.question: Optional[Question] = None
-        self.state: Optional[str] = None
-        self.chat_id: Optional[int] = None
-        self.scores: Optional[List[Score]] = None
-        self.users: Optional[List[User]] = None
-        self.used_answers: Optional[List[str]] = None
+        if game is None:
+            self.game: Optional[Game] = None
+            self.question: Optional[Question] = None
+            self.state: Optional[str] = None
+            self.chat_id: Optional[int] = None
+            self.scores: Optional[List[Score]] = None
+            self.users: Optional[List[User]] = None
+            self.used_answers: Optional[List[str]] = None
+        else:
+            run_async_func(self.init_from_game(game))
 
-    async def main(self, chat_id: int):
-        # TODO: доделать основную функцию
-        await self.start_game(chat_id)
-
-        while len(self.users) > 1:
-            await self.send_question()
+    async def init_from_game(self, game: Game) -> None:
+        self.game = game
+        self.question = await self.app.store.quizzes.get_question_by_id(
+            game.question_id)
+        self.state = game.state_id
+        self.chat_id = game.chat_id
+        self.scores = await self.app.store.games.get_scores_by_game_id(game.id)
+        self.users = await self.app.store.vk_api.get_conversation_members(
+            peer_id=game.chat_id)
+        self.used_answers = self.game.used_answers
+        if self.used_answers is None:
+            self.used_answers = []
 
     async def start_game(self, chat_id: int) -> None:
         self.state = self.STATES[1]
         self.chat_id = chat_id
         self.users = await self.app.store.vk_api.get_conversation_members(peer_id=chat_id)
-        self.game = await self.app.store.games.create_game()
+        self.game = await self.app.store.games.create_game(chat_id=chat_id)
         self.question = await self.app.store.quizzes.get_question_by_id(self.game.question_id)
         self.used_answers = []
         for user in self.users:
@@ -47,7 +61,7 @@ class GameManager:
                 await self.app.store.games.create_user(user.id, user.full_name)
             except IntegrityError:
                 pass
-        self.scores = await self.app.store.games.create_start_score(
+        self.scores = await self.app.store.games.create_start_scores(
             game_id=self.game.id,
             users_id=[user.id for user in self.users]
         )
@@ -96,9 +110,19 @@ class GameManager:
         ))
 
     async def is_all_users_kicked(self):
-        return all([self.is_user_kicked(user.id) for user in self.users])
+        if self.scores is None:
+            return False
+        count = 0
+        for score in self.scores:
+            if score.total == -1:
+                count += 1
+        if count == len(self.scores):
+            return True
+        return False
 
     async def is_all_answers_used(self):
+        if self.question is None:
+            return False
         return len(self.question.answers) == len(self.used_answers)
 
     async def is_correct_answer(self, answer: Answer) -> bool:
@@ -114,6 +138,15 @@ class GameManager:
             return True
         return False
 
+    async def prepare_to_answer(self, user_id: int) -> None:
+        for user in self.users:
+            if user.id == user_id:
+                answer_user = user
+        await self.app.store.vk_api.send_group_message(Message(
+            receiver_id=self.chat_id,
+            text=f'{answer_user.full_name}, жду твой ответ!'
+        ))
+
     async def check_answer(self, answer: Answer, user_id: int) -> None:
         if await self.is_correct_answer(answer):
             if answer.title in self.used_answers:
@@ -123,7 +156,8 @@ class GameManager:
                 ))
             else:
                 self.used_answers.append(answer.title)
-                self.game = await self.app.store.games.add_answer_to_used(answer.title)
+                self.game = await self.app.store.games.add_answer_to_used(
+                    game_id=self.game.id, answer=answer.title)
                 await self.add_point(user_id)
         else:
             await self.user_kick(user_id)
@@ -133,10 +167,11 @@ class GameManager:
     async def end_game(self, chat_id: int):
         self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=5)
         self.state = self.STATES[5]
-
         results = ''
         for score in self.scores:
-            results += f'{score.player.full_name}: {score.total} \n'
+            for user in self.users:
+                if user.id == score.user_id:
+                    results += f'{user.full_name}: {score.total} '
 
         await self.app.store.vk_api.send_group_message(Message(
             receiver_id=chat_id,

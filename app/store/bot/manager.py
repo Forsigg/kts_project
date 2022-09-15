@@ -15,19 +15,22 @@ class BotManager:
         self.bot = None
         self.logger = getLogger("handler")
 
-    async def bot_start_game(self, chat_id: int):
+    async def bot_start_game(self, chat_id: int) -> GameManager:
         game = await self.app.store.games.get_active_game_by_chat_id(chat_id)
         if game:
-            return await self.app.store.vk_api.send_group_message(
+            await self.app.store.vk_api.send_group_message(
                 Message(
                     receiver_id=chat_id,
                     text='Игра еще не закончена. Чтобы закончить игру введите "закончить игру"',
                 )
             )
+            game = GameManager(self.app, game)
+        else:
+            game = GameManager(self.app)
 
-        game = GameManager(self.app)
         self.app.games.append(game)
         await game.start_game(chat_id)
+        return game
 
     def get_existed_game_or_get_false(self, chat_id) -> typing.Union[bool, GameManager]:
         if self.app.games:
@@ -61,31 +64,39 @@ class BotManager:
                     game = await self.app.store.games.get_active_game_by_chat_id(chat_id)
                     game_manager = self.get_existed_game_or_get_false(chat_id=chat_id)
                     print('ALL GOOD')
+                    print('game: ', game)
+                    print('game_manager: ', game_manager)
 
-                    if game_manager and (game_manager.is_all_users_kicked() or game_manager.is_all_answers_used()):
-                        await game_manager.end_game(chat_id)
+                    if game and game_manager and (await
+                                                  game_manager.is_all_users_kicked() or
+                                                  await game_manager.is_all_answers_used()
+                    ):
                         print("GAME IS OVER")
+                        await game_manager.end_game(chat_id)
 
-                    if game and game.state_id != 4:
-                        print("HERE 1")
+                    if message_text == "начать игру":
+                        print("HERE 2")
+                        game_manager = await self.bot_start_game(chat_id)
+                        await game_manager.send_question()
 
-                        if message_text == "начать игру" and game is None:
-                            print("HERE 2")
-                            await self.bot_start_game(chat_id)
-                            await game_manager.send_question()
+                    elif message_text == 'закончить игру' and game is not None:
+                        print('HERE 3')
+                        await self.bot_end_game(chat_id)
 
-                        elif message_text == 'закончить игру' and game:
-                            await self.bot_end_game(chat_id)
-
-                        elif message_text == 'ответ' and game.state_id == 3:  # 3 state = "waiting"
-
-                            if await game_manager.is_user_kicked(user_id):
-                                pass
-                            else:
-                                self.app.store.games.update_state_in_game(game_id=game.id, state_id=4)
-                                game.state = GameManager.STATES[4]
+                    elif message_text == 'ответ' and game.state_id == 3:  # 3 state = "waiting"
+                        print("HERE 4")
+                        if await game_manager.is_user_kicked(user_id):
+                            pass
+                        else:
+                            print("HERE 5")
+                            await game_manager.prepare_to_answer(user_id)
+                            await self.app.store.games.update_state_in_game(
+                                game_id=game.id,
+                                                                       state_id=4)
+                            game.state = GameManager.STATES[4]
 
                     elif game and game.state_id == 4:
+                        print("HERE 6")
                         if not await game_manager.is_user_kicked(user_id):
                             answer = Answer(title=message_text)
                             await game_manager.check_answer(answer=answer, user_id=user_id)

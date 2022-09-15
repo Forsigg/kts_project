@@ -24,7 +24,7 @@ class Application(AiohttpApplication):
     config: Optional[Config] = None
     store: Optional[Store] = None
     database: Optional[Database] = None
-    games: Optional[typing.List[GameManager]] = []
+    games: typing.List[GameManager] = []
 
 
 class Request(AiohttpRequest):

@@ -1,6 +1,7 @@
 from typing import Optional, List
 
-from sqlalchemy import select, update, and_
+from sqlalchemy import select, and_, update
+from sqlalchemy.orm import joinedload
 
 from app.base.base_accessor import BaseAccessor
 from app.game.game_manager import GameManager
@@ -10,6 +11,21 @@ from app.game.models import Game, GameModel, UserModel, User, Score, ScoreModel
 class GameAccessor(BaseAccessor):
     ######################################################################
     # GET (SELECT)
+    async def get_all_games(self) -> List[Game]:
+        async with self.app.database.session.begin() as session:
+            query = select(GameModel)
+            res = await session.execute(query)
+            games = res.scalars().all()
+            return [game.to_dc() for game in games]
+
+    async def get_all_game_managers(self) -> List[GameManager]:
+        games = await self.get_all_games()
+        game_managers = [GameManager(self.app, game) for game in games]
+        return game_managers
+
+    async def add_game_managers_to_app(self, *_, **__) -> None:
+        self.app.games = await self.get_all_game_managers()
+
     async def get_game_by_id(self, game_id: int) -> Optional[Game]:
         async with self.app.database.session.begin() as session:
             query = select(GameModel).where(GameModel.id == game_id)
@@ -24,12 +40,19 @@ class GameAccessor(BaseAccessor):
             query = select(GameModel).where(and_(
                 GameModel.chat_id == chat_id,
                 GameModel.state_id < 5
-            ))
+            )).options(joinedload(GameModel.scores))
             res = await session.execute(query)
             game = res.scalar()
             if game:
                 return game.to_dc()
         return None
+
+    async def get_score_by_id(self, score_id: int) -> Optional[Score]:
+        async with self.app.database.session.begin() as session:
+            query = select(ScoreModel).where(ScoreModel.id == score_id)
+            res = await session.execute(query)
+            score = res.scalar()
+        return score.to_dc()
 
     async def get_scores_by_game_id(self, game_id: int) -> List[Score]:
         async with self.app.database.session.begin() as session:
@@ -52,10 +75,9 @@ class GameAccessor(BaseAccessor):
 
     async def create_game(self, chat_id: int) -> Game:
         async with self.app.database.session.begin() as session:
-            question = self.app.store.quizzes.get_random_question()
+            question = await self.app.store.quizzes.get_random_question()
             game = GameModel(chat_id=chat_id, state_id=1, question_id=question.id)
             session.add(game)
-
         return game.to_dc()
 
     async def create_user(self, user_id: int, user_full_name: str) -> User:
@@ -64,42 +86,50 @@ class GameAccessor(BaseAccessor):
             session.add(user)
         return user.to_dc()
 
-    async def create_start_score(self, game_id: int, users_id: list[int]) -> List[Score]:
+    async def create_start_scores(self, game_id: int, users_id: list[int]) -> List[Score]:
         scores = [ScoreModel(
             game_id=game_id,
             user_id=user_id
         ) for user_id in users_id]
         async with self.app.database.session.begin() as session:
             session.add_all(scores)
-        return [score.to_dc() for score in scores]
+            return [score.to_dc() for score in scores]
+
+    async def create_start_score(self, game_id: int, user_id: int) -> Score:
+        async with self.app.database.session.begin() as session:
+            score = ScoreModel(game_id=game_id, user_id=user_id)
+            session.add(score)
+        return score.to_dc()
 
     ######################################################################
     # UPDATE
 
     async def add_one_point_to_score(self, score_id: int) -> Score:
         async with self.app.database.session.begin() as session:
-            score = select(ScoreModel).where(ScoreModel.id == score_id)
-            score.total += 1
-            session.commit()
-        return score.to_dc()
+            await session.execute(update(ScoreModel).where(ScoreModel.id ==
+                                                           score_id).values(
+                total=ScoreModel.total+1))
+            score = await self.get_score_by_id(score_id)
+        return score
 
     async def add_answer_to_used(self, game_id: int, answer: str) -> Game:
         async with self.app.database.session.begin() as session:
-            game = select(GameModel).where(GameModel.id == game_id)
-            game.used_answers += f',{answer}'
-            session.commit()
-        return game.to_dc()
+            await session.execute(update(GameModel).where(GameModel.id == game_id).values(
+                used_answers=f"{GameModel.used_answers},{answer}"))
+            game = await self.get_game_by_id(game_id)
+        return game
 
     async def update_score_to_minus_one_point(self, score_id: int) -> Score:
         async with self.app.database.session.begin() as session:
-            score = select(ScoreModel).where(ScoreModel.id == score_id)
-            score.total = 0
-            session.commit()
-        return score.to_dc()
+            await session.execute(update(ScoreModel).where(ScoreModel.id ==
+                                                           score_id).values(
+                total=0))
+            score = await self.get_score_by_id(score_id)
+        return score
 
     async def update_state_in_game(self, game_id: int, state_id: int) -> Game:
         async with self.app.database.session.begin() as session:
-            game = select(GameModel).where(GameModel.id == game_id)
-            game.state_id = state_id
-            session.commit()
-        return game.to_dc()
+            await session.execute(update(GameModel).where(GameModel.id == game_id).values(
+                state_id=state_id))
+            game = await self.get_game_by_id(game_id)
+        return game
