@@ -26,6 +26,7 @@ class GameManager:
         self.chat_id: Optional[int] = None
         self.scores: Optional[List[Score]] = None
         self.users: Optional[List[User]] = None
+        self.used_answers: Optional[List[str]] = None
 
     async def main(self, chat_id: int):
         # TODO: доделать основную функцию
@@ -34,24 +35,13 @@ class GameManager:
         while len(self.users) > 1:
             await self.send_question()
 
-    async def is_correct_answer(self, answer: Answer) -> bool:
-        answers = self.question.answers
-        for answer_from_question in answers:
-            if answer.title == answer_from_question.title:
-                return True
-        return False
-
-    async def is_game_over(self) -> bool:
-        if len(self.users) == 1:
-            return True
-        return False
-
     async def start_game(self, chat_id: int) -> None:
         self.state = self.STATES[1]
         self.chat_id = chat_id
         self.users = await self.app.store.vk_api.get_conversation_members(peer_id=chat_id)
         self.game = await self.app.store.games.create_game()
         self.question = await self.app.store.quizzes.get_question_by_id(self.game.question_id)
+        self.used_answers = []
         for user in self.users:
             try:
                 await self.app.store.games.create_user(user.id, user.full_name)
@@ -78,39 +68,72 @@ class GameManager:
         self.state = self.STATES[3]
 
     async def user_kick(self, user_id: int) -> None:
-        for user in self.users:
-            if user.id == user_id:
-                lose_user = user
-        self.users.remove(lose_user)
-
         for score in self.scores:
-            if score.player.id == user_id:
-                score.total = 0
-                await self.app.store.games.update_score_to_zero_point(score.id)
+            if score.user_id == user_id:
+                score.total = -1
+                await self.app.store.games.update_score_to_minus_one_point(score.id)
 
+        lose_user = list(filter(lambda x: x.id == user_id, self.users))[0]
         await self.app.store.vk_api.send_group_message(Message(
             receiver_id=self.chat_id,
             text=f"Игрок {lose_user.full_name} выбывает!"
         ))
 
     async def is_user_kicked(self, user_id: int) -> bool:
-        for user in self.users:
-            if user.id == user_id:
-                return False
-        return True
+        for score in self.scores:
+            if score.total == -1 and score.user_id == user_id:
+                return True
+        return False
 
     async def add_point(self, user_id: int) -> None:
-        old_score = list(filter(lambda x: x.user_id.id == user_id, self.scores))[0]
-        new_score = await self.app.store.games.add_one_point_to_score(score_id=old_score.id)
-        self.scores.remove(old_score)
-        self.scores.append(new_score)
+        score = list(filter(lambda x: x.user_id.id == user_id, self.scores))[0]
+        score.total += 1
+        await self.app.store.games.add_one_point_to_score(score_id=score.id)
+        user = list(filter(lambda x: x.id == user_id, self.users))[0]
         await self.app.store.vk_api.send_group_message(Message(
             receiver_id=self.chat_id,
-            text=f"Игрок {new_score.player.full_name} получает 1 очко!"
+            text=f"Игрок {user.full_name} получает 1 очко!"
         ))
 
+    async def is_all_users_kicked(self):
+        return all([self.is_user_kicked(user.id) for user in self.users])
+
+    async def is_all_answers_used(self):
+        return len(self.question.answers) == len(self.used_answers)
+
+    async def is_correct_answer(self, answer: Answer) -> bool:
+        answers = self.question.answers
+        for answer_from_question in answers:
+            if answer.title == answer_from_question.title:
+                return True
+        return False
+
+    async def is_game_over(self) -> bool:
+        game = await self.app.store.games.get_active_game_by_chat_id(self.chat_id)
+        if game is None:
+            return True
+        return False
+
+    async def check_answer(self, answer: Answer, user_id: int) -> None:
+        if await self.is_correct_answer(answer):
+            if answer.title in self.used_answers:
+                await self.app.store.vk_api.send_group_message(Message(
+                    receiver_id=self.chat_id,
+                    text=f"Такой ответ уже был."
+                ))
+            else:
+                self.used_answers.append(answer.title)
+                self.game = await self.app.store.games.add_answer_to_used(answer.title)
+                await self.add_point(user_id)
+        else:
+            await self.user_kick(user_id)
+
+        self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=2)
+
     async def end_game(self, chat_id: int):
-        self.state = 'DONE'
+        self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=5)
+        self.state = self.STATES[5]
+
         results = ''
         for score in self.scores:
             results += f'{score.player.full_name}: {score.total} \n'
@@ -125,13 +148,10 @@ class GameManager:
             text=f'Игра закончена, всем до свидания!'
         ))
 
-        await self.app.store.games.change_game_not_active(self.game.id)
-
         self.game = None
         self.users = None
         self.scores = None
         self.question = None
-        self.is_active = False
 
 
 

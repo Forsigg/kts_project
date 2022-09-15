@@ -16,7 +16,7 @@ class BotManager:
         self.logger = getLogger("handler")
 
     async def bot_start_game(self, chat_id: int):
-        game = await self.is_game_exist(chat_id)
+        game = await self.app.store.games.get_active_game_by_chat_id(chat_id)
         if game:
             return await self.app.store.vk_api.send_group_message(
                 Message(
@@ -29,7 +29,7 @@ class BotManager:
         self.app.games.append(game)
         await game.start_game(chat_id)
 
-    async def is_game_exist(self, chat_id) -> typing.Union[bool, GameManager]:
+    def get_existed_game_or_get_false(self, chat_id) -> typing.Union[bool, GameManager]:
         if self.app.games:
             game_filter = list(filter(lambda x: x.chat_id == chat_id, self.app.games))
             if game_filter:
@@ -37,8 +37,8 @@ class BotManager:
         return False
 
     async def bot_end_game(self, chat_id: int):
-        game = await self.is_game_exist(chat_id)
-        if not game:
+        game_manager = self.get_existed_game_or_get_false(chat_id=chat_id)
+        if not game_manager:
             return await self.app.store.vk_api.send_group_message(
                 Message(
                     receiver_id=chat_id,
@@ -46,14 +46,7 @@ class BotManager:
                 )
             )
 
-        await game.end_game(chat_id)
-
-    async def is_ready_to_answer(self, chat_id: int) -> bool:
-        game = await self.is_game_exist(chat_id)
-        if game:
-            if game.state == "CHECKING":
-                return True
-            return False
+        await game_manager.end_game(chat_id)
 
     async def handle_updates(self, updates: list[Update]):
         # TODO: перенести основную логику игры в GameManager
@@ -65,27 +58,37 @@ class BotManager:
                 chat_id = message.peer_id
                 if chat_id > 2000000000:
 
-                    game = await self.app.store.games.get_active_game_by_chat_id()
+                    game = await self.app.store.games.get_active_game_by_chat_id(chat_id)
+                    game_manager = self.get_existed_game_or_get_false(chat_id=chat_id)
+                    print('ALL GOOD')
 
-                    if message_text == "начать игру" and game is None:
-                        await self.bot_start_game(chat_id)
+                    if game_manager and (game_manager.is_all_users_kicked() or game_manager.is_all_answers_used()):
+                        await game_manager.end_game(chat_id)
+                        print("GAME IS OVER")
 
-                    elif message_text == 'закончить игру' and game:
-                        await self.bot_end_game(chat_id)
+                    if game and game.state_id != 4:
+                        print("HERE 1")
 
-                    elif message_text == 'ответ' and not await self.is_ready_to_answer(chat_id):
-                        if await game.is_user_kicked(user_id):
-                            pass
-                        else:
-                            game.state = "CHECKING"
+                        if message_text == "начать игру" and game is None:
+                            print("HERE 2")
+                            await self.bot_start_game(chat_id)
+                            await game_manager.send_question()
 
-                    elif await self.is_ready_to_answer(message.peer_id):
-                        if not game.is_user_kicked(user_id):
-                            answer = Answer(title=message_text)
-                            if await game.is_correct_answer(answer):
-                                await game.add_point(user_id)
+                        elif message_text == 'закончить игру' and game:
+                            await self.bot_end_game(chat_id)
+
+                        elif message_text == 'ответ' and game.state_id == 3:  # 3 state = "waiting"
+
+                            if await game_manager.is_user_kicked(user_id):
+                                pass
                             else:
-                                await game.user_kick(user_id)
+                                self.app.store.games.update_state_in_game(game_id=game.id, state_id=4)
+                                game.state = GameManager.STATES[4]
+
+                    elif game and game.state_id == 4:
+                        if not await game_manager.is_user_kicked(user_id):
+                            answer = Answer(title=message_text)
+                            await game_manager.check_answer(answer=answer, user_id=user_id)
 
 
 

@@ -5,6 +5,7 @@ from typing import List
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 
+from app.quiz.schemes import Answer
 from app.store.database.sqlalchemy_base import db
 
 
@@ -38,6 +39,7 @@ class Game:
     scores: List[Score]
     question_id: int
     state_id: int
+    used_answers = str
 
 
 class StateModel(db):
@@ -79,7 +81,8 @@ class GameModel(db):
     chat_id = Column(Integer, nullable=False)
     scores = relationship('ScoreModel')
     question_id = Column(Integer, ForeignKey('questions.id'), nullable=True)
-    state_id = Column(Integer, ForeignKey('states.id'), nullable=False)
+    state_id = Column(Integer, ForeignKey('states.id'), nullable=False, default=1)
+    used_answers = Column(String, nullable=True)
 
     def to_dc(self):
         return Game(id=self.id, chat_id=self.chat_id,
@@ -90,4 +93,5 @@ class GameModel(db):
                         total=score.total
                     ) for score in self.scores],
                     question_id=self.question_id,
-                    state_id=self.state_id)
+                    state_id=self.state_id,
+                    used_answers=self.used_answers)

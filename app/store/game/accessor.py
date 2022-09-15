@@ -3,6 +3,7 @@ from typing import Optional, List
 from sqlalchemy import select, update, and_
 
 from app.base.base_accessor import BaseAccessor
+from app.game.game_manager import GameManager
 from app.game.models import Game, GameModel, UserModel, User, Score, ScoreModel
 
 
@@ -18,10 +19,10 @@ class GameAccessor(BaseAccessor):
                 return game.to_dc()
         return None
 
-    async def get_active_game_by_chat_id(self, game_id: int) -> Optional[Game]:
+    async def get_active_game_by_chat_id(self, chat_id: int) -> Optional[Game]:
         async with self.app.database.session.begin() as session:
             query = select(GameModel).where(and_(
-                GameModel.id == game_id,
+                GameModel.chat_id == chat_id,
                 GameModel.state_id < 5
             ))
             res = await session.execute(query)
@@ -81,6 +82,13 @@ class GameAccessor(BaseAccessor):
             score.total += 1
             session.commit()
         return score.to_dc()
+
+    async def add_answer_to_used(self, game_id: int, answer: str) -> Game:
+        async with self.app.database.session.begin() as session:
+            game = select(GameModel).where(GameModel.id == game_id)
+            game.used_answers += f',{answer}'
+            session.commit()
+        return game.to_dc()
 
     async def update_score_to_minus_one_point(self, score_id: int) -> Score:
         async with self.app.database.session.begin() as session:
