@@ -52,7 +52,9 @@ class GameAccessor(BaseAccessor):
             query = select(ScoreModel).where(ScoreModel.id == score_id)
             res = await session.execute(query)
             score = res.scalar()
-        return score.to_dc()
+            if score:
+                return score.to_dc()
+        return None
 
     async def get_scores_by_game_id(self, game_id: int) -> List[Score]:
         async with self.app.database.session.begin() as session:
@@ -69,6 +71,13 @@ class GameAccessor(BaseAccessor):
             scores = res.scalars().all()
             scores = [score.to_dc() for score in scores]
         return scores
+
+    async def get_state_id_by_game_id(self, game_id: int) -> Optional[int]:
+        async with self.app.database.session.begin() as session:
+            game = await self.get_game_by_id(game_id)
+            if game is not None:
+                return game.state_id
+        return None
 
     ######################################################################
     # CREATE (INSERT)
@@ -87,11 +96,12 @@ class GameAccessor(BaseAccessor):
         return user.to_dc()
 
     async def create_start_scores(self, game_id: int, users_id: list[int]) -> List[Score]:
-        scores = [ScoreModel(
-            game_id=game_id,
-            user_id=user_id
-        ) for user_id in users_id]
         async with self.app.database.session.begin() as session:
+            scores = [ScoreModel(
+                game_id=game_id,
+                user_id=user_id,
+                total=0
+            ) for user_id in users_id]
             session.add_all(scores)
             return [score.to_dc() for score in scores]
 
@@ -104,11 +114,11 @@ class GameAccessor(BaseAccessor):
     ######################################################################
     # UPDATE
 
-    async def add_one_point_to_score(self, score_id: int) -> Score:
+    async def update_total_in_score(self, score_id: int, total: int) -> Score:
         async with self.app.database.session.begin() as session:
             await session.execute(update(ScoreModel).where(ScoreModel.id ==
                                                            score_id).values(
-                total=ScoreModel.total+1))
+                total=total))
             score = await self.get_score_by_id(score_id)
         return score
 

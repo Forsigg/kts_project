@@ -33,6 +33,7 @@ class GameManager:
             self.scores: Optional[List[Score]] = None
             self.users: Optional[List[User]] = None
             self.used_answers: Optional[List[str]] = None
+            self.answers: Optional[List[Answer]] = None
         else:
             run_async_func(self.init_from_game(game))
 
@@ -45,16 +46,18 @@ class GameManager:
         self.scores = await self.app.store.games.get_scores_by_game_id(game.id)
         self.users = await self.app.store.vk_api.get_conversation_members(
             peer_id=game.chat_id)
+        self.answers = await self.app.store.quizzes.get_answers_by_question_id(self.question.id)
         self.used_answers = self.game.used_answers
         if self.used_answers is None:
             self.used_answers = []
 
     async def start_game(self, chat_id: int) -> None:
-        self.state = self.STATES[1]
+        self.state = 1
         self.chat_id = chat_id
         self.users = await self.app.store.vk_api.get_conversation_members(peer_id=chat_id)
         self.game = await self.app.store.games.create_game(chat_id=chat_id)
         self.question = await self.app.store.quizzes.get_question_by_id(self.game.question_id)
+        self.answers = await self.app.store.quizzes.get_answers_by_question_id(self.question.id)
         self.used_answers = []
         for user in self.users:
             try:
@@ -71,19 +74,20 @@ class GameManager:
                  f'{",".join([user.full_name for user in self.users])}'
         ))
         self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=2)
-        self.state = self.STATES[2]
+        self.state = 2
 
     async def send_question(self) -> None:
         await self.app.store.vk_api.send_group_message(Message(
-            receiver_id=self.chat_id,
+            receiver_id=self.game.chat_id,
             text=f"{self.question.title}"
         ))
         self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=3)
-        self.state = self.STATES[3]
+        self.state = 3
 
     async def user_kick(self, user_id: int) -> None:
         for score in self.scores:
             if score.user_id == user_id:
+                print('SCORE: ', score)
                 score.total = -1
                 await self.app.store.games.update_score_to_minus_one_point(score.id)
 
@@ -94,19 +98,27 @@ class GameManager:
         ))
 
     async def is_user_kicked(self, user_id: int) -> bool:
+        if self.scores is None:
+            return False
         for score in self.scores:
             if score.total == -1 and score.user_id == user_id:
                 return True
         return False
 
     async def add_point(self, user_id: int) -> None:
-        score = list(filter(lambda x: x.user_id.id == user_id, self.scores))[0]
-        score.total += 1
-        await self.app.store.games.add_one_point_to_score(score_id=score.id)
-        user = list(filter(lambda x: x.id == user_id, self.users))[0]
+        for score in self.scores:
+            if score.user_id == user_id:
+                score.total += 1
+                score_obj = score
+
+        await self.app.store.games.update_total_in_score(score_id=score_obj.id, total=score_obj.total)
+
+        for user in self.users:
+            if user.id == user_id:
+                user_from_game = user
         await self.app.store.vk_api.send_group_message(Message(
             receiver_id=self.chat_id,
-            text=f"Игрок {user.full_name} получает 1 очко!"
+            text=f"Игрок {user_from_game.full_name} получает 1 очко!"
         ))
 
     async def is_all_users_kicked(self):
@@ -126,9 +138,11 @@ class GameManager:
         return len(self.question.answers) == len(self.used_answers)
 
     async def is_correct_answer(self, answer: Answer) -> bool:
-        answers = self.question.answers
+        answers = self.answers
+        print('RIGHT ANSWERS:', answers)
+        print("YOUR ANSWER:", answer)
         for answer_from_question in answers:
-            if answer.title == answer_from_question.title:
+            if answer.title.lower() == answer_from_question.title.lower():
                 return True
         return False
 
@@ -161,12 +175,12 @@ class GameManager:
                 await self.add_point(user_id)
         else:
             await self.user_kick(user_id)
-
-        self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=2)
+        self.state = 3
+        self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=3)
 
     async def end_game(self, chat_id: int):
         self.game = await self.app.store.games.update_state_in_game(game_id=self.game.id, state_id=5)
-        self.state = self.STATES[5]
+        self.state = 5
         results = ''
         for score in self.scores:
             for user in self.users:
@@ -187,6 +201,8 @@ class GameManager:
         self.users = None
         self.scores = None
         self.question = None
+        self.chat_id = None
+        self.used_answers = None
 
 
 

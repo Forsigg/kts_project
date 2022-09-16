@@ -1,5 +1,5 @@
 import random
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -125,3 +125,12 @@ class QuizAccessor(BaseAccessor):
             questions_from_db = await session.execute(query)
             questions_from_db = questions_from_db.scalars().unique()
             return [question.to_dc() for question in questions_from_db]
+
+    async def get_answers_by_question_id(self, question_id: int) -> Optional[List[str]]:
+        async with self.app.database.session.begin() as session:
+            query = select(AnswerModel).where(AnswerModel.question_id == question_id)
+            res = await session.execute(query)
+            answers = res.scalars().all()
+            if answers:
+                return [answer.to_dc() for answer in answers]
+        return None

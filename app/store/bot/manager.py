@@ -25,12 +25,14 @@ class BotManager:
                 )
             )
             game = GameManager(self.app, game)
+            if game not in self.app.games:
+                self.app.games.append(game)
+            return game
         else:
             game = GameManager(self.app)
-
-        self.app.games.append(game)
-        await game.start_game(chat_id)
-        return game
+            self.app.games.append(game)
+            await game.start_game(chat_id)
+            return game
 
     def get_existed_game_or_get_false(self, chat_id) -> typing.Union[bool, GameManager]:
         if self.app.games:
@@ -77,7 +79,9 @@ class BotManager:
                     if message_text == "начать игру":
                         print("HERE 2")
                         game_manager = await self.bot_start_game(chat_id)
-                        await game_manager.send_question()
+                        game = await self.app.store.games.get_active_game_by_chat_id(chat_id)
+                        if game.state_id == 2:
+                            await game_manager.send_question()
 
                     elif message_text == 'закончить игру' and game is not None:
                         print('HERE 3')
@@ -91,11 +95,10 @@ class BotManager:
                             print("HERE 5")
                             await game_manager.prepare_to_answer(user_id)
                             await self.app.store.games.update_state_in_game(
-                                game_id=game.id,
-                                                                       state_id=4)
+                                game_id=game.id,state_id=4)
                             game.state = GameManager.STATES[4]
 
-                    elif game and game.state_id == 4:
+                    elif game and game.state_id == 4: # 4 state = "checking"
                         print("HERE 6")
                         if not await game_manager.is_user_kicked(user_id):
                             answer = Answer(title=message_text)

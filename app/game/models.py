@@ -87,11 +87,3 @@ class GameModel(db):
                     question_id=self.question_id,
                     state_id=self.state_id,
                     used_answers=self.used_answers)
-
-
-# Score(
-#                         id=score.id,
-#                         user_id=score.user_id,
-#                         game_id=self.id,
-#                         total=score.total
-#                     )
