@@ -62,9 +62,20 @@ class BotManager:
                 chat_id = message.peer_id
                 if chat_id > 2000000000:
 
+                    if message_text.lower() == "правила":
+                        await self.app.store.vk_api.send_group_message(
+                            Message(
+                                receiver_id=chat_id,
+                                text='Для начала игры напишите "начать игру", после чего '
+                                'будет отправлен вопрос. Для ответа на вопрос напишите "ответ", '
+                                "после чего бот будет ожидать ответа именно от Вас. "
+                                "Далее, наберите ответ и отправьте в чат. Для "
+                                'завершения игры напишите "закончить игру."',
+                            )
+                        )
+
                     game = await self.app.store.games.get_active_game_by_chat_id(
                         chat_id
-
                     )
                     game_manager = self.get_existed_game_or_get_false(chat_id=chat_id)
 

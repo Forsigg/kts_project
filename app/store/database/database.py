@@ -40,4 +40,4 @@ class Database:
         self._engine = None
         self.session = None
         self._db = None
-        print('database disconnected')
+        print("database disconnected")
