@@ -54,7 +54,6 @@ class BotManager:
         await game_manager.end_game(chat_id)
 
     async def handle_updates(self, updates: list[Update]):
-        # TODO: перенести основную логику игры в GameManager
         if updates:
             for update in updates:
                 user_id = update.object.user_id
@@ -63,46 +62,47 @@ class BotManager:
                 chat_id = message.peer_id
                 if chat_id > 2000000000:
 
-                    game = await self.app.store.games.get_active_game_by_chat_id(chat_id)
+                    game = await self.app.store.games.get_active_game_by_chat_id(
+                        chat_id
+                    )
                     game_manager = self.get_existed_game_or_get_false(chat_id=chat_id)
-                    print('ALL GOOD')
-                    print('game: ', game)
-                    print('game_manager: ', game_manager)
 
-                    if game and game_manager and (await
-                                                  game_manager.is_all_users_kicked() or
-                                                  await game_manager.is_all_answers_used()
+                    if (
+                        game
+                        and game_manager
+                        and (
+                            await game_manager.is_all_users_kicked()
+                            or await game_manager.is_all_answers_used()
+                        )
                     ):
-                        print("GAME IS OVER")
                         await game_manager.end_game(chat_id)
 
                     if message_text == "начать игру":
-                        print("HERE 2")
                         game_manager = await self.bot_start_game(chat_id)
-                        game = await self.app.store.games.get_active_game_by_chat_id(chat_id)
+                        game = await self.app.store.games.get_active_game_by_chat_id(
+                            chat_id
+                        )
                         if game.state_id == 2:
                             await game_manager.send_question()
 
-                    elif message_text == 'закончить игру' and game is not None:
-                        print('HERE 3')
+                    elif message_text == "закончить игру" and game is not None:
                         await self.bot_end_game(chat_id)
 
-                    elif message_text == 'ответ' and game.state_id == 3:  # 3 state = "waiting"
-                        print("HERE 4")
+                    elif (
+                        message_text == "ответ" and game.state_id == 3
+                    ):  # 3 state = "waiting"
                         if await game_manager.is_user_kicked(user_id):
                             pass
                         else:
-                            print("HERE 5")
                             await game_manager.prepare_to_answer(user_id)
                             await self.app.store.games.update_state_in_game(
-                                game_id=game.id,state_id=4)
+                                game_id=game.id, state_id=4
+                            )
                             game.state = GameManager.STATES[4]
 
-                    elif game and game.state_id == 4: # 4 state = "checking"
-                        print("HERE 6")
+                    elif game and game.state_id == 4:  # 4 state = "checking"
                         if not await game_manager.is_user_kicked(user_id):
                             answer = Answer(title=message_text)
-                            await game_manager.check_answer(answer=answer, user_id=user_id)
-
-
-
+                            await game_manager.check_answer(
+                                answer=answer, user_id=user_id
+                            )

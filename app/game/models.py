@@ -1,6 +1,5 @@
 import enum
 from dataclasses import dataclass
-from typing import List
 
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
@@ -41,7 +40,7 @@ class Game:
 
 
 class StateModel(db):
-    __tablename__ = 'states'
+    __tablename__ = "states"
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
 
@@ -58,7 +57,9 @@ class UserModel(db):
 class ScoreModel(db):
     __tablename__ = "scores"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     game_id = Column(
         Integer, ForeignKey("games.id", ondelete="CASCADE"), nullable=False
     )
@@ -77,13 +78,16 @@ class GameModel(db):
     __tablename__ = "games"
     id = Column(Integer, primary_key=True, autoincrement=True)
     chat_id = Column(Integer, nullable=False)
-    scores = relationship(ScoreModel, lazy='subquery')
-    question_id = Column(Integer, ForeignKey('questions.id'), nullable=True)
-    state_id = Column(Integer, ForeignKey('states.id'), nullable=False, default=1)
+    scores = relationship(ScoreModel, lazy="subquery")
+    question_id = Column(Integer, ForeignKey("questions.id"), nullable=True)
+    state_id = Column(Integer, ForeignKey("states.id"), nullable=False, default=1)
     used_answers = Column(String, nullable=True)
 
     def to_dc(self):
-        return Game(id=self.id, chat_id=self.chat_id,
-                    question_id=self.question_id,
-                    state_id=self.state_id,
-                    used_answers=self.used_answers)
+        return Game(
+            id=self.id,
+            chat_id=self.chat_id,
+            question_id=self.question_id,
+            state_id=self.state_id,
+            used_answers=self.used_answers,
+        )

@@ -37,10 +37,11 @@ class GameAccessor(BaseAccessor):
 
     async def get_active_game_by_chat_id(self, chat_id: int) -> Optional[Game]:
         async with self.app.database.session.begin() as session:
-            query = select(GameModel).where(and_(
-                GameModel.chat_id == chat_id,
-                GameModel.state_id < 5
-            )).options(joinedload(GameModel.scores))
+            query = (
+                select(GameModel)
+                .where(and_(GameModel.chat_id == chat_id, GameModel.state_id < 5))
+                .options(joinedload(GameModel.scores))
+            )
             res = await session.execute(query)
             game = res.scalar()
             if game:
@@ -73,10 +74,9 @@ class GameAccessor(BaseAccessor):
         return scores
 
     async def get_state_id_by_game_id(self, game_id: int) -> Optional[int]:
-        async with self.app.database.session.begin() as session:
-            game = await self.get_game_by_id(game_id)
-            if game is not None:
-                return game.state_id
+        game = await self.get_game_by_id(game_id)
+        if game is not None:
+            return game.state_id
         return None
 
     ######################################################################
@@ -95,13 +95,14 @@ class GameAccessor(BaseAccessor):
             session.add(user)
         return user.to_dc()
 
-    async def create_start_scores(self, game_id: int, users_id: list[int]) -> List[Score]:
+    async def create_start_scores(
+        self, game_id: int, users_id: list[int]
+    ) -> List[Score]:
         async with self.app.database.session.begin() as session:
-            scores = [ScoreModel(
-                game_id=game_id,
-                user_id=user_id,
-                total=0
-            ) for user_id in users_id]
+            scores = [
+                ScoreModel(game_id=game_id, user_id=user_id, total=0)
+                for user_id in users_id
+            ]
             session.add_all(scores)
             return [score.to_dc() for score in scores]
 
@@ -116,30 +117,36 @@ class GameAccessor(BaseAccessor):
 
     async def update_total_in_score(self, score_id: int, total: int) -> Score:
         async with self.app.database.session.begin() as session:
-            await session.execute(update(ScoreModel).where(ScoreModel.id ==
-                                                           score_id).values(
-                total=total))
+            await session.execute(
+                update(ScoreModel).where(ScoreModel.id == score_id).values(total=total)
+            )
             score = await self.get_score_by_id(score_id)
         return score
 
     async def add_answer_to_used(self, game_id: int, answer: str) -> Game:
         async with self.app.database.session.begin() as session:
-            await session.execute(update(GameModel).where(GameModel.id == game_id).values(
-                used_answers=f"{GameModel.used_answers},{answer}"))
+            await session.execute(
+                update(GameModel)
+                .where(GameModel.id == game_id)
+                .values(used_answers=f"{GameModel.used_answers},{answer}")
+            )
             game = await self.get_game_by_id(game_id)
         return game
 
     async def update_score_to_minus_one_point(self, score_id: int) -> Score:
         async with self.app.database.session.begin() as session:
-            await session.execute(update(ScoreModel).where(ScoreModel.id ==
-                                                           score_id).values(
-                total=0))
+            await session.execute(
+                update(ScoreModel).where(ScoreModel.id == score_id).values(total=0)
+            )
             score = await self.get_score_by_id(score_id)
         return score
 
     async def update_state_in_game(self, game_id: int, state_id: int) -> Game:
         async with self.app.database.session.begin() as session:
-            await session.execute(update(GameModel).where(GameModel.id == game_id).values(
-                state_id=state_id))
+            await session.execute(
+                update(GameModel)
+                .where(GameModel.id == game_id)
+                .values(state_id=state_id)
+            )
             game = await self.get_game_by_id(game_id)
         return game

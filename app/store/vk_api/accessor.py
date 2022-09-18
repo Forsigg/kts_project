@@ -87,7 +87,7 @@ class VkApiAccessor(BaseAccessor):
             raw_updates = data.get("updates", [])
             updates = []
             for update in raw_updates:
-                message = update['object']['message']
+                message = update["object"]["message"]
                 updates.append(
                     Update(
                         type=update["type"],
@@ -95,7 +95,7 @@ class VkApiAccessor(BaseAccessor):
                             id=message["id"],
                             user_id=message["from_id"],
                             body=message["text"],
-                            peer_id=message['peer_id']
+                            peer_id=message["peer_id"],
                         ),
                     )
                 )
@@ -120,21 +120,27 @@ class VkApiAccessor(BaseAccessor):
 
     async def send_group_message(self, message: Message, keyboard: json = None) -> None:
         if keyboard is None:
-            url = self._build_query(API_PATH, "messages.send",
-                                    params={
-                                        "random_id": random.randint(1, 2 ** 32),
-                                        "peer_id": message.receiver_id,
-                                        "message": message.text,
-                                        "access_token": self.app.config.bot.token,
-                                    })
+            url = self._build_query(
+                API_PATH,
+                "messages.send",
+                params={
+                    "random_id": random.randint(1, 2**32),
+                    "peer_id": message.receiver_id,
+                    "message": message.text,
+                    "access_token": self.app.config.bot.token,
+                },
+            )
         else:
-            url = self._build_query(API_PATH, "messages.send",
-                                    params={
-                                        "random_id": random.randint(1, 2 ** 32),
-                                        "peer_id": message.receiver_id,
-                                        "access_token": self.app.config.bot.token,
-                                        "keyboard": keyboard
-                                    })
+            url = self._build_query(
+                API_PATH,
+                "messages.send",
+                params={
+                    "random_id": random.randint(1, 2**32),
+                    "peer_id": message.receiver_id,
+                    "access_token": self.app.config.bot.token,
+                    "keyboard": keyboard,
+                },
+            )
         async with self.session.get(url) as resp:
             data = await resp.json()
             self.logger.info(data)
@@ -145,18 +151,22 @@ class VkApiAccessor(BaseAccessor):
         элементами которых являются строка (имя и фамилия) и целое число (vk id участника)
         """
         async with self.session.get(
-                self._build_query(
-                    API_PATH,
-                    'messages.getConversationMembers',
-                    params={
-                        "peer_id": peer_id,
-                        "access_token": self.app.config.bot.token,
-                    },
-                )
+            self._build_query(
+                API_PATH,
+                "messages.getConversationMembers",
+                params={
+                    "peer_id": peer_id,
+                    "access_token": self.app.config.bot.token,
+                },
+            )
         ) as resp:
             data = await resp.json()
             self.logger.info(data)
-            users = data['response']['profiles']
-            users = [User(id=user['id'], full_name=f"{user['first_name']} {user['last_name']}") for user in users]
+            users = data["response"]["profiles"]
+            users = [
+                User(
+                    id=user["id"], full_name=f"{user['first_name']} {user['last_name']}"
+                )
+                for user in users
+            ]
             return users
-
