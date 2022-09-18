@@ -95,7 +95,6 @@ class GameManager:
     async def user_kick(self, user_id: int) -> None:
         for score in self.scores:
             if score.user_id == user_id:
-                print("SCORE: ", score)
                 score.total = -1
                 await self.app.store.games.update_score_to_minus_one_point(score.id)
 
@@ -152,8 +151,6 @@ class GameManager:
 
     async def is_correct_answer(self, answer: Answer) -> bool:
         answers = self.answers
-        print("RIGHT ANSWERS:", answers)
-        print("YOUR ANSWER:", answer)
         for answer_from_question in answers:
             if answer.title.lower() == answer_from_question.title.lower():
                 return True
