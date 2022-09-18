@@ -2,7 +2,7 @@ from aiohttp.web_exceptions import HTTPConflict, HTTPNotFound, HTTPBadRequest
 from aiohttp_apispec import querystring_schema, request_schema, response_schema, docs
 from sqlalchemy.exc import IntegrityError
 
-from app.quiz.models import Answer
+from app.quiz.schemes import Answer
 from app.quiz.schemes import (
     ListQuestionSchema,
     QuestionSchema,

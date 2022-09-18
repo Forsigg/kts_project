@@ -16,8 +16,9 @@ class Worker:
         self.poll_task = asyncio.create_task(self.poll())
 
     async def stop(self):
-        self.is_running = False
         await self.poll_task
+        self.is_running = False
+
 
     async def poll(self):
         while self.is_running:

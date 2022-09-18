@@ -37,4 +37,7 @@ class Database:
     async def disconnect(self, *_: list, **__: dict) -> None:
         if self._engine:
             await self._engine.dispose()
+        self._engine = None
+        self.session = None
         self._db = None
+        print('database disconnected')

@@ -11,6 +11,7 @@ from aiohttp_session import setup as session_setup
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 
 from app.admin.models import Admin
+from app.game.game_manager import GameManager
 from app.store import Store, setup_store
 from app.store.database.database import Database
 from app.web.config import Config, setup_config
@@ -23,6 +24,7 @@ class Application(AiohttpApplication):
     config: Optional[Config] = None
     store: Optional[Store] = None
     database: Optional[Database] = None
+    games: typing.List[GameManager] = []
 
 
 class Request(AiohttpRequest):
