@@ -23,7 +23,9 @@ class VkApiAccessor(BaseAccessor):
         self.session: Optional[ClientSession] = None
         self.key: Optional[str] = None
         self.server: Optional[str] = None
+
         self.worker: Optional[Worker] = None
+
         self.ts: Optional[int] = None
 
     async def connect(self, app: "Application"):
@@ -33,6 +35,7 @@ class VkApiAccessor(BaseAccessor):
         except Exception as e:
             self.logger.error("Exception", exc_info=e)
         self.worker = Worker(app.store)
+
         self.logger.info("start polling")
         await self.worker.start()
 
@@ -170,3 +173,4 @@ class VkApiAccessor(BaseAccessor):
                 for user in users
             ]
             return users
+

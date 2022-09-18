@@ -69,10 +69,12 @@ class QuizAccessor(BaseAccessor):
         self, title: str, theme_id: int, answers: list[Answer]
     ) -> Question:
         async with self.app.database.session.begin() as session:
+
             question = QuestionModel(
                 title=title,
                 theme_id=theme_id,
                 answers=[AnswerModel(title=answer.title) for answer in answers],
+
             )
             session.add(question)
         return question.to_dc()

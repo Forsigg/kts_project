@@ -22,6 +22,7 @@ class QuestionModel(db):
     answers = relationship("AnswerModel")
 
     def to_dc(self) -> Question:
+
         return Question(
             id=self.id,
             title=self.title,
@@ -43,7 +44,9 @@ class AnswerModel(db):
         Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False
     )
 
+
     def to_dc(self) -> Answer:
+
         return Answer(
             title=self.title,
         )

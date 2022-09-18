@@ -57,19 +57,23 @@ class UserModel(db):
 class ScoreModel(db):
     __tablename__ = "scores"
     id = Column(Integer, primary_key=True, autoincrement=True)
+
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     game_id = Column(
         Integer, ForeignKey("games.id", ondelete="CASCADE"), nullable=False
     )
+
     total = Column(Integer, default=0)
 
     def to_dc(self):
         return Score(
             id=self.id,
             game_id=self.game_id,
+
             user_id=self.user_id,
+
             total=self.total,
         )
 
@@ -84,6 +88,7 @@ class GameModel(db):
     used_answers = Column(String, nullable=True)
 
     def to_dc(self):
+
         return Game(
             id=self.id,
             chat_id=self.chat_id,
@@ -91,3 +96,4 @@ class GameModel(db):
             state_id=self.state_id,
             used_answers=self.used_answers,
         )
+

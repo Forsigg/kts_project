@@ -64,6 +64,7 @@ class BotManager:
 
                     game = await self.app.store.games.get_active_game_by_chat_id(
                         chat_id
+
                     )
                     game_manager = self.get_existed_game_or_get_false(chat_id=chat_id)
 

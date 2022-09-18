@@ -28,4 +28,6 @@ def setup_store(app: "Application"):
     app.on_cleanup.append(app.database.disconnect)
     app.store = Store(app)
     app.on_startup.append(app.store.admins.create_first_admin)
+
     app.on_startup.append(app.store.games.add_game_managers_to_app)
+

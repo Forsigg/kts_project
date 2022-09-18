@@ -19,6 +19,7 @@ class Worker:
         await self.poll_task
         self.is_running = False
 
+
     async def poll(self):
         while self.is_running:
             updates = await self.store.vk_api.poll()
