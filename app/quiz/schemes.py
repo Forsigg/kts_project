@@ -13,7 +13,7 @@ class Theme:
 @dataclass
 class Answer:
     title: str
-    is_correct: bool
+
 
 
 @dataclass

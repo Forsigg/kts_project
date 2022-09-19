@@ -5,9 +5,9 @@ admin:
   password: admin
 database:
   host: localhost
-  port: 5432
+  port: 5430
   user: kts_user
-  password: kts_pass
+  password: kts
   database: kts
 bot:
   token: vk1.a.xpvboYu4z6FPBGFubpfM_AryhtKAOT9DAyz_EFb4jMlYp5UHBSgU4-B6AYx-r6LNNZZa1dyeD4tWIwOaZElFIMeUCAPAZmyd9-T608ZmxWRZ5QOGuBO9Zy-0ybjnzFVaPVzDJbt3holdFjCDBM92y8yX1o1XQbxvQaAfHgS4-xM0qhzjRZ17Ho5s3gmgVuJj

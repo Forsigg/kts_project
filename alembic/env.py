@@ -10,14 +10,15 @@ from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-from app.admin.models import AdminModel
+
+from app.quiz.models import QuestionModel
 from app.web.config import DatabaseConfig
 
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 config_path = Path('.').parent.joinpath('config.yml')
-with open(config_path, "r") as f:
+with config_path.open() as f:
     raw_config = yaml.safe_load(f)
 
 config = DatabaseConfig(**raw_config['database'])
@@ -28,7 +29,7 @@ db_url = f"postgresql+asyncpg://{config.user}:{config.password}@{config.host}:" 
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = AdminModel.metadata
+target_metadata = QuestionModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
